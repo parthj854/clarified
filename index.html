@@ -85,58 +85,84 @@
                         return;
                     }
 
+                    console.log('🔍 Fetching course data for courseId:', courseId);
+                    console.log('🔑 Access token:', accessToken ? 'Present (length: ' + accessToken.length + ')' : 'Missing!');
+
                     // FETCH REAL ASSIGNMENTS FROM GOOGLE CLASSROOM
-                    const courseworkResponse = await fetch(
-                        `https://classroom.googleapis.com/v1/courses/${courseId}/courseWork?pageSize=100`,
-                        { headers: { 'Authorization': 'Bearer ' + accessToken }}
-                    );
+                    const courseworkUrl = `https://classroom.googleapis.com/v1/courses/${courseId}/courseWork?pageSize=100`;
+                    console.log('📡 Fetching from:', courseworkUrl);
+                    
+                    const courseworkResponse = await fetch(courseworkUrl, {
+                        headers: { 
+                            'Authorization': 'Bearer ' + accessToken,
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    console.log('📥 Coursework response status:', courseworkResponse.status);
+
+                    if (!courseworkResponse.ok) {
+                        const errorText = await courseworkResponse.text();
+                        console.error('❌ Coursework API Error:', errorText);
+                        throw new Error(`API returned ${courseworkResponse.status}: ${errorText.substring(0, 200)}`);
+                    }
 
                     // FETCH REAL COURSE MATERIALS
-                    const materialsResponse = await fetch(
-                        `https://classroom.googleapis.com/v1/courses/${courseId}/courseWorkMaterials?pageSize=100`,
-                        { headers: { 'Authorization': 'Bearer ' + accessToken }}
-                    );
+                    const materialsUrl = `https://classroom.googleapis.com/v1/courses/${courseId}/courseWorkMaterials?pageSize=100`;
+                    const materialsResponse = await fetch(materialsUrl, {
+                        headers: { 
+                            'Authorization': 'Bearer ' + accessToken,
+                            'Accept': 'application/json'
+                        }
+                    });
 
-                    if (courseworkResponse.ok && materialsResponse.ok) {
-                        const courseworkData = await courseworkResponse.json();
-                        const materialsData = await materialsResponse.json();
+                    console.log('📥 Materials response status:', materialsResponse.status);
 
-                        // Process REAL assignments
-                        const realAssignments = (courseworkData.courseWork || []).map(work => ({
-                            id: work.id,
-                            title: work.title,
-                            description: work.description || 'No description provided',
-                            dueDate: work.dueDate ? `${work.dueDate.year}-${String(work.dueDate.month).padStart(2, '0')}-${String(work.dueDate.day).padStart(2, '0')}` : 'No due date',
-                            maxPoints: work.maxPoints || 0,
-                            type: work.workType || 'Assignment',
-                            materials: work.materials || [],
-                            state: work.state
-                        }));
+                    const courseworkData = await courseworkResponse.json();
+                    const materialsData = materialsResponse.ok ? await materialsResponse.json() : { courseWorkMaterial: [] };
 
-                        // Process REAL materials
-                        const realMaterials = (materialsData.courseWorkMaterial || []).map(material => ({
-                            id: material.id,
-                            title: material.title,
-                            description: material.description || 'No description',
-                            materials: material.materials || []
-                        }));
+                    console.log('📊 Raw coursework data:', courseworkData);
 
-                        console.log('✅ Real assignments loaded:', realAssignments.length);
-                        console.log('✅ Real materials loaded:', realMaterials.length);
-                        console.log('Assignments:', realAssignments);
+                    // Process REAL assignments
+                    const realAssignments = (courseworkData.courseWork || []).map(work => ({
+                        id: work.id,
+                        title: work.title,
+                        description: work.description || 'No description provided',
+                        dueDate: work.dueDate ? `${work.dueDate.year}-${String(work.dueDate.month).padStart(2, '0')}-${String(work.dueDate.day).padStart(2, '0')}` : 'No due date',
+                        maxPoints: work.maxPoints || 0,
+                        type: work.workType || 'Assignment',
+                        materials: work.materials || [],
+                        state: work.state
+                    }));
 
-                        setCourseData({
-                            courseName: courses.find(c => c.id === courseId)?.name || 'Course',
-                            assignments: realAssignments,
-                            materials: realMaterials,
-                            syllabus: 'Syllabus extracted from course materials'
-                        });
-                    } else {
-                        throw new Error('Failed to fetch course data from Google Classroom');
-                    }
+                    // Process REAL materials
+                    const realMaterials = (materialsData.courseWorkMaterial || []).map(material => ({
+                        id: material.id,
+                        title: material.title,
+                        description: material.description || 'No description',
+                        materials: material.materials || []
+                    }));
+
+                    console.log('✅ Successfully loaded:', realAssignments.length, 'assignments');
+                    console.log('✅ Successfully loaded:', realMaterials.length, 'materials');
+                    console.log('📝 Assignments:', realAssignments);
+
+                    setCourseData({
+                        courseName: courses.find(c => c.id === courseId)?.name || 'Course',
+                        assignments: realAssignments,
+                        materials: realMaterials,
+                        syllabus: 'Syllabus extracted from course materials'
+                    });
+                    
+                    setActiveTab('setup');
                 } catch (err) {
-                    console.error('❌ Error fetching real data:', err);
-                    alert('Could not load real assignments. Error: ' + err.message + '\n\nUsing demo data instead.');
+                    console.error('❌ FULL ERROR DETAILS:', err);
+                    console.error('Error name:', err.name);
+                    console.error('Error message:', err.message);
+                    console.error('Error stack:', err.stack);
+                    
+                    alert('Could not load real assignments. Error: ' + err.message + '\n\nCheck browser console (F12) for details.\n\nUsing demo data instead.');
+                    
                     // Fallback to demo data
                     setCourseData({
                         courseName: 'Grade 7 Mathematics (Demo - Error Loading Real Data)',
@@ -145,8 +171,8 @@
                         ],
                         materials: []
                     });
+                    setActiveTab('setup');
                 }
-                setActiveTab('setup');
             };
 
             const analyzeContent = () => {

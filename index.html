@@ -282,23 +282,19 @@ Provide a JSON response (ONLY JSON, no markdown) with this EXACT structure:
 
 Be thorough and specific. List ALL standards that are not met.`;
 
-                    console.log('📤 Sending prompt to Claude API...');
+                    console.log('📤 Sending to backend API...');
 
-                    // Call Claude API
-                    const response = await fetch('https://api.anthropic.com/v1/messages', {
+                    // Call YOUR Vercel backend (not Claude API directly)
+                    const response = await fetch('https://clarifi-ed-backend-jx55k9vfq-parths-projects-2532c9f7.vercel.app/api/analyze', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({
-                            model: 'claude-sonnet-4-20250514',
-                            max_tokens: 4000,
-                            messages: [
-                                {
-                                    role: 'user',
-                                    content: prompt
-                                }
-                            ]
+                            assignments: courseData.assignments,
+                            gradeLevel: gradeLevel,
+                            subject: subject,
+                            courseName: courseData.courseName
                         })
                     });
 
@@ -308,25 +304,13 @@ Be thorough and specific. List ALL standards that are not met.`;
                         throw new Error(`Claude API error: ${response.status}`);
                     }
 
-                    const data = await response.json();
-                    console.log('📊 Claude API response:', data);
+                    const analysisResult = await response.json();
+                    console.log('✅ Backend response:', analysisResult);
 
-                    // Extract text from response
-                    const responseText = data.content
-                        .filter(block => block.type === 'text')
-                        .map(block => block.text)
-                        .join('\n');
-
-                    console.log('📝 Response text:', responseText);
-
-                    // Clean and parse JSON
-                    const cleanedText = responseText
-                        .replace(/```json\n?/g, '')
-                        .replace(/```\n?/g, '')
-                        .trim();
-
-                    const analysisResult = JSON.parse(cleanedText);
-                    console.log('✅ Parsed analysis:', analysisResult);
+                    // Check if backend returned an error
+                    if (analysisResult.error) {
+                        throw new Error(analysisResult.message || analysisResult.error);
+                    }
 
                     setAnalysis(analysisResult);
                     setActiveTab('results');

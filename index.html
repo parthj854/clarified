@@ -184,14 +184,51 @@
                 setTimeout(() => {
                     setAnalysis({
                         score: 72,
-                        summary: 'Moderate alignment with CA Common Core. Strong in ratios and expressions but needs more statistics and geometry content.',
-                        domains: { 'Ratios': 80, 'Number System': 65, 'Expressions': 75, 'Geometry': 45, 'Statistics': 30 },
+                        summary: 'Moderate alignment with CA Common Core Standards for Grade 7 Mathematics. Strong coverage in Ratios and Expressions domains, but significant gaps in Geometry and Statistics.',
+                        domains: { 
+                            '7.RP (Ratios)': 80, 
+                            '7.NS (Number System)': 65, 
+                            '7.EE (Expressions)': 75, 
+                            '7.G (Geometry)': 45, 
+                            '7.SP (Statistics)': 30 
+                        },
+                        standardsMet: [
+                            { code: '7.RP.1', description: 'Compute unit rates associated with ratios of fractions', evidence: 'Ratios and Proportions Worksheet addresses unit rates directly with multiple practice problems' },
+                            { code: '7.RP.2.a', description: 'Decide whether two quantities are in a proportional relationship', evidence: 'Worksheet includes proportion identification exercises' },
+                            { code: '7.RP.2.c', description: 'Represent proportional relationships by equations', evidence: 'Partially covered in worksheet problems' },
+                            { code: '7.EE.1', description: 'Apply properties to add, subtract, factor, and expand linear expressions', evidence: 'Linear Expressions Quiz covers basic expression manipulation' },
+                            { code: '7.EE.4.a', description: 'Solve word problems leading to equations of the form px + q = r', evidence: 'Quiz includes equation-solving problems' },
+                            { code: '7.NS.1.d', description: 'Apply properties of operations to add and subtract rational numbers', evidence: 'Covered in worksheet warm-up problems' }
+                        ],
+                        standardsNotMet: [
+                            { code: '7.RP.2.b', description: 'Identify the constant of proportionality (unit rate)', importance: 'Critical for understanding proportional relationships deeply', impact: 'Students may struggle with rate problems in real-world contexts' },
+                            { code: '7.RP.2.d', description: 'Explain what a point (x, y) on the graph means in context', importance: 'Essential for connecting algebraic and graphical representations', impact: 'Will struggle with interpreting graphs in Grade 8 functions' },
+                            { code: '7.NS.2.c', description: 'Apply properties to multiply and divide rational numbers', importance: 'Foundation for all algebraic manipulation', impact: 'Cannot solve complex equations without this skill' },
+                            { code: '7.NS.3', description: 'Solve real-world problems involving four operations with rational numbers', importance: 'Application of all number system skills', impact: 'Missing real-world problem-solving practice' },
+                            { code: '7.EE.2', description: 'Understand that rewriting expressions sheds light on problems', importance: 'Develops algebraic reasoning and flexibility', impact: 'Students won\'t see multiple solution strategies' },
+                            { code: '7.EE.3', description: 'Solve multi-step real-life problems with rational numbers', importance: 'Combines computation and problem-solving', impact: 'Lack of authentic application practice' },
+                            { code: '7.EE.4.b', description: 'Solve word problems leading to inequalities px + q > r', importance: 'Extends equation-solving to inequalities', impact: 'Missing entire inequality unit' },
+                            { code: '7.G.1', description: 'Solve problems involving scale drawings', importance: 'Connects ratios to geometric applications', impact: 'Cannot work with maps, blueprints, or models' },
+                            { code: '7.G.2', description: 'Draw geometric shapes with given conditions', importance: 'Spatial reasoning and geometric construction', impact: 'Weak geometric visualization skills' },
+                            { code: '7.G.3', description: 'Describe 2D figures from slicing 3D figures', importance: 'Advanced spatial reasoning', impact: '3D geometry understanding will be very limited' },
+                            { code: '7.G.4', description: 'Know formulas for area and circumference of circles', importance: 'Essential geometry skill used throughout mathematics', impact: 'Cannot solve any circle problems' },
+                            { code: '7.G.5', description: 'Use facts about angles to write and solve equations', importance: 'Connects geometry and algebra', impact: 'Missing key geometric reasoning skills' },
+                            { code: '7.G.6', description: 'Solve problems involving area, volume, surface area', importance: 'Real-world measurement applications', impact: 'Cannot solve practical geometry problems' },
+                            { code: '7.SP.1', description: 'Understand statistics can gain information from samples', importance: 'Foundation of data literacy', impact: 'No understanding of sampling or surveys' },
+                            { code: '7.SP.2', description: 'Use data from random samples to draw inferences', importance: 'Critical for interpreting research and news', impact: 'Cannot evaluate data-based claims' },
+                            { code: '7.SP.3', description: 'Assess degree of visual overlap of distributions', importance: 'Comparing groups using data', impact: 'Cannot compare data sets meaningfully' },
+                            { code: '7.SP.4', description: 'Use measures of center and variability', importance: 'Core statistical reasoning', impact: 'Missing entire statistics foundation' },
+                            { code: '7.SP.5', description: 'Understand probability is a number between 0 and 1', importance: 'Basis of probability reasoning', impact: 'No probability understanding whatsoever' },
+                            { code: '7.SP.6', description: 'Approximate probability by collecting data', importance: 'Experimental probability and simulations', impact: 'Cannot conduct probability experiments' },
+                            { code: '7.SP.7.a', description: 'Develop a uniform probability model', importance: 'Theoretical probability foundation', impact: 'Cannot calculate basic probabilities' },
+                            { code: '7.SP.8', description: 'Find probabilities of compound events', importance: 'Advanced probability reasoning', impact: 'Cannot solve multi-step probability problems' }
+                        ],
                         recommendations: [
-                            'Add statistics unit on sampling and data analysis',
-                            'Include more geometry activities on scale drawings',
-                            'Add real-world problem-solving contexts',
-                            'Develop formative assessments for each unit',
-                            'Include more visual representations and manipulatives'
+                            { priority: 'CRITICAL', standard: '7.G.1-6', action: 'Add comprehensive geometry unit covering scale drawings, circles, and 3D figures', timeframe: 'Next 3-4 weeks', rationale: 'Entire geometry domain severely under-represented with only 45% coverage' },
+                            { priority: 'CRITICAL', standard: '7.SP.1-8', action: 'Develop statistics and probability unit with sampling, data analysis, and probability models', timeframe: 'Next 4-5 weeks', rationale: 'Only 30% coverage - students are missing entire domain' },
+                            { priority: 'HIGH', standard: '7.RP.2.d', action: 'Add graphing activities connecting proportional relationships to coordinate planes', timeframe: 'Next 1-2 weeks', rationale: 'Need to connect algebraic and graphical representations' },
+                            { priority: 'HIGH', standard: '7.NS.3, 7.EE.3', action: 'Include multi-step real-world problem-solving activities across all topics', timeframe: 'Ongoing', rationale: 'Missing application and authentic context throughout' },
+                            { priority: 'MEDIUM', standard: '7.EE.4.b', action: 'Add inequality solving unit after equations mastery', timeframe: 'Next 2-3 weeks', rationale: 'Natural extension of equation-solving skills' }
                         ]
                     });
                     setIsAnalyzing(false);
@@ -387,7 +424,7 @@
 
                             {activeTab === 'results' && analysis && (
                                 <div className="space-y-6">
-                                    <h2 className="text-3xl font-bold">📊 Analysis Results</h2>
+                                    <h2 className="text-3xl font-bold">📊 Standards Alignment Analysis</h2>
                                     
                                     <div className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg p-6 border-2 border-indigo-200">
                                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
@@ -424,16 +461,85 @@
                                         </div>
                                     </div>
 
-                                    <div className="bg-white border-2 border-amber-300 rounded-lg p-6">
-                                        <h3 className="text-2xl font-bold mb-4 text-amber-900">💡 AI Recommendations</h3>
-                                        <ul className="space-y-3">
-                                            {analysis.recommendations.map((rec, i) => (
-                                                <li key={i} className="flex gap-3 items-start">
-                                                    <span className="text-amber-600 font-bold text-lg flex-shrink-0">{i + 1}.</span>
-                                                    <span className="text-gray-800">{rec}</span>
-                                                </li>
+                                    {/* STANDARDS MET */}
+                                    <div className="bg-green-50 border-2 border-green-300 rounded-lg p-6">
+                                        <h3 className="text-2xl font-bold mb-4 text-green-900 flex items-center gap-2">
+                                            ✅ Standards Currently Met ({analysis.standardsMet.length})
+                                        </h3>
+                                        <div className="space-y-3">
+                                            {analysis.standardsMet.map((std, i) => (
+                                                <div key={i} className="bg-white rounded-lg p-4 border border-green-200">
+                                                    <div className="flex items-start gap-3">
+                                                        <div className="bg-green-600 text-white px-3 py-1 rounded font-mono text-sm font-bold flex-shrink-0">
+                                                            {std.code}
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <div className="font-semibold text-gray-900 mb-1">{std.description}</div>
+                                                            <div className="text-sm text-gray-600 italic">Evidence: {std.evidence}</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             ))}
-                                        </ul>
+                                        </div>
+                                    </div>
+
+                                    {/* STANDARDS NOT MET */}
+                                    <div className="bg-red-50 border-2 border-red-300 rounded-lg p-6">
+                                        <h3 className="text-2xl font-bold mb-4 text-red-900 flex items-center gap-2">
+                                            ❌ Standards NOT Being Met ({analysis.standardsNotMet.length})
+                                        </h3>
+                                        <div className="bg-red-100 border border-red-300 rounded-lg p-4 mb-4">
+                                            <p className="text-sm text-red-900 font-semibold">
+                                                ⚠️ CRITICAL: {analysis.standardsNotMet.length} standards are not addressed. 
+                                                Students will have significant gaps in their Grade 7 mathematics knowledge.
+                                            </p>
+                                        </div>
+                                        <div className="space-y-3 max-h-96 overflow-y-auto">
+                                            {analysis.standardsNotMet.map((std, i) => (
+                                                <div key={i} className="bg-white rounded-lg p-4 border border-red-200">
+                                                    <div className="flex items-start gap-3">
+                                                        <div className="bg-red-600 text-white px-3 py-1 rounded font-mono text-sm font-bold flex-shrink-0">
+                                                            {std.code}
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <div className="font-semibold text-gray-900 mb-2">{std.description}</div>
+                                                            <div className="text-sm space-y-1">
+                                                                <div className="text-orange-700">
+                                                                    <strong>Why Important:</strong> {std.importance}
+                                                                </div>
+                                                                <div className="text-red-700">
+                                                                    <strong>Impact:</strong> {std.impact}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* RECOMMENDATIONS */}
+                                    <div className="bg-amber-50 border-2 border-amber-300 rounded-lg p-6">
+                                        <h3 className="text-2xl font-bold mb-4 text-amber-900">💡 Prioritized Action Plan</h3>
+                                        <div className="space-y-4">
+                                            {analysis.recommendations.map((rec, i) => (
+                                                <div key={i} className="bg-white rounded-lg p-5 border-l-4" style={{borderLeftColor: rec.priority === 'CRITICAL' ? '#dc2626' : rec.priority === 'HIGH' ? '#f59e0b' : '#3b82f6'}}>
+                                                    <div className="flex items-start gap-3">
+                                                        <div className={'px-3 py-1 rounded text-white text-xs font-bold ' + (rec.priority === 'CRITICAL' ? 'bg-red-600' : rec.priority === 'HIGH' ? 'bg-orange-500' : 'bg-blue-500')}>
+                                                            {rec.priority}
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">{rec.standard}</span>
+                                                                <span className="text-xs text-gray-500">• {rec.timeframe}</span>
+                                                            </div>
+                                                            <div className="font-semibold text-gray-900 mb-2">{rec.action}</div>
+                                                            <div className="text-sm text-gray-600 italic">{rec.rationale}</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
 
                                     <div className="flex gap-4">

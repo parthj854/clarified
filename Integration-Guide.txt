@@ -1,0 +1,239 @@
+# ClarifiEd AI - Complete Integration Guide
+
+## 📁 New File Structure
+
+```
+clarified/
+├── index.html          ← Landing page (your Lovable design)
+├── auth.html          ← NEW: Login/Signup page
+├── dashboard.html     ← RENAMED from app.html (with new theme)
+└── README.md          ← This guide
+```
+
+## 🎨 Design System
+
+### Color Palette
+- **Cream**: #F8F6F3 (background)
+- **Cream Dark**: #F2EFE9 (cards)
+- **Navy**: #1A3A52 (primary text & sidebar)
+- **Navy Light**: #2B5573 (hover states)
+- **Orange**: #FF6B35 (accent/CTA buttons)
+- **Orange Light**: #FF8359 (hover states)
+
+### Typography
+- **Body**: DM Sans
+- **Headings**: Outfit
+
+## 🔄 User Flow
+
+### New Users
+1. Land on `index.html` → See features
+2. Click "Get Started" → Go to `auth.html`
+3. Sign in with Google → Redirect to `dashboard.html`
+4. See sidebar navigation with:
+   - Overview (home)
+   - Courses
+   - Setup (analysis config)
+   - History
+   - Results
+
+### Returning Users
+1. Visit any page → Auto-check localStorage
+2. If logged in → Redirect to `dashboard.html`
+3. If not logged in → Show appropriate page
+
+## 🔑 Key Changes from Original
+
+### What's New:
+1. **auth.html** - Dedicated login/signup page
+   - Google Sign-In integration
+   - Demo mode option
+   - Split-screen design (form + decorative)
+   
+2. **dashboard.html** - New themed dashboard
+   - Sidebar navigation (desktop)
+   - Hamburger menu (mobile)
+   - User profile in sidebar
+   - Sign out button
+   - Integrated with your analysis engine
+
+3. **Consistent theme** - Navy & Orange throughout
+   - Professional appearance
+   - Warm cream backgrounds
+   - Clean typography
+
+### What Stayed:
+- Google Classroom integration
+- PDF download & analysis
+- Standards alignment engine
+- Analysis history
+- Remember Me functionality
+
+## 📝 Updated Landing Page (index.html)
+
+### Changes:
+- "Get Started" button → Links to `auth.html` (not direct Google sign-in)
+- Maintains beautiful Lovable design
+- Auto-redirects if already logged in
+
+## 🆕 Auth Page (auth.html)
+
+### Features:
+- Google Sign-In button
+- Demo mode button
+- Split-screen design
+- Decorative right panel with stats
+- Auto-redirect if logged in
+
+### Workflow:
+```
+User clicks "Sign in with Google"
+  ↓
+Google OAuth popup
+  ↓
+Get user info from Google API
+  ↓
+Save to localStorage (clarifi_user, clarifi_token)
+  ↓
+Redirect to dashboard.html
+```
+
+## 🎛️ Dashboard (dashboard.html)
+
+### Layout:
+```
+┌─────────────┬─────────────────────────────────┐
+│             │                                 │
+│   Sidebar   │         Main Content            │
+│             │                                 │
+│  - Logo     │  Tab Content:                   │
+│  - Nav      │  - Courses                      │
+│             │  - Setup                        │
+│             │  - History                      │
+│             │  - Results                      │
+│  - Profile  │                                 │
+│  - Sign Out │                                 │
+└─────────────┴─────────────────────────────────┘
+```
+
+### Sidebar Navigation:
+- **Courses**: Select Google Classroom course
+- **Setup**: Configure analysis (grade, subject)
+- **History**: View past analyses
+- **Results**: See analysis report
+
+### Mobile View:
+- Collapsible sidebar
+- Hamburger menu
+- Full-width content
+
+## 🔐 Authentication Flow
+
+### localStorage Structure:
+```javascript
+{
+  clarifi_user: {
+    name: "John Doe",
+    email: "john@school.edu",
+    picture: "https://..."
+  },
+  clarifi_token: "ya29.a0Ae4...",
+  clarifi_token_timestamp: "1703635200000"
+}
+```
+
+### Token Expiry:
+- Tokens expire after 1 hour
+- Auto-check on page load
+- Redirect to auth.html if expired
+
+## 🚀 Deployment Steps
+
+1. **Replace index.html**
+   - Upload new landing page
+
+2. **Add auth.html**
+   - Upload new auth page
+
+3. **Rename app.html to dashboard.html**
+   - Update with new theme (or keep as is for now)
+
+4. **Update index.html links**
+   - "Get Started" → `auth.html`
+   - Keep demo button → `auth.html`
+
+5. **Test flow**
+   - Landing → Auth → Dashboard
+   - Remember Me functionality
+   - Sign out flow
+
+## 🎨 Styling Updates Needed
+
+### For dashboard.html:
+To match new theme, update these colors:
+
+```css
+/* Replace purple/blue with navy/orange */
+.bg-indigo-600 → .bg-navy (or bg-orange for CTAs)
+.text-indigo-600 → .text-navy
+.border-indigo-600 → .border-orange
+.hover:bg-indigo-700 → .hover:bg-navy-light
+```
+
+## 📊 Integration with Backend
+
+No changes needed! The backend API remains the same:
+- `https://clarifi-ed-backend.vercel.app/api/analyze`
+- Receives: assignments, gradeLevel, subject, filesData
+- Returns: analysis JSON
+
+## 🔧 Customization Options
+
+### Easy Changes:
+1. **Logo**: Replace lightbulb SVG with image
+2. **Colors**: Update CSS variables
+3. **Text**: Update copy in HTML
+4. **Stats**: Update "500+ Schools" badges
+
+### Advanced Changes:
+1. **Database**: Add Supabase for real auth (optional)
+2. **Analytics**: Add Google Analytics
+3. **Email**: Add email/password auth option
+
+## ✅ Testing Checklist
+
+- [ ] Landing page loads
+- [ ] "Get Started" goes to auth.html
+- [ ] Google Sign-In works
+- [ ] Demo mode works
+- [ ] Redirects to dashboard
+- [ ] Dashboard sidebar works
+- [ ] Course selection works
+- [ ] Analysis runs
+- [ ] Results display
+- [ ] History saves
+- [ ] Sign out works
+- [ ] Remember Me works
+- [ ] Mobile responsive
+- [ ] Token expiry works
+
+## 🎯 Next Steps
+
+1. Deploy all three files (index.html, auth.html, dashboard.html)
+2. Test complete user flow
+3. Optional: Add analytics
+4. Optional: Add more grades/subjects
+5. Optional: Migrate to Supabase for real database
+
+## 📞 Support
+
+If you encounter issues:
+1. Check browser console for errors
+2. Verify localStorage has correct data
+3. Check Google OAuth credentials
+4. Verify backend API is running
+
+---
+
+**Created**: December 26, 2025
+**Version**: 2.0 - Integrated Auth & New Theme

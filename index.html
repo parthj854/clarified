@@ -191,7 +191,7 @@
         // ========== APP COMPONENT ==========
         
         const App = () => {
-            const [activeTab, setActiveTab] = useState('connect');
+            const [activeTab, setActiveTab] = useState(null); // Start with null, will be set based on login status
             const [isConnected, setIsConnected] = useState(false);
             const [user, setUser] = useState(null);
             const [accessToken, setAccessToken] = useState(null);
@@ -215,8 +215,11 @@
                     // Fetch courses with saved token
                     fetchCourses(savedSession.token);
                     
-                    // Start on courses tab instead of connect
+                    // Go directly to courses tab, skipping connect page
                     setActiveTab('courses');
+                } else {
+                    // No saved session, show connect page
+                    setActiveTab('connect');
                 }
                 
                 // Load analysis history
@@ -563,6 +566,12 @@
                         </div>
 
                         <div className="bg-white rounded-lg shadow-lg p-6">
+                            {activeTab === null && (
+                                <div className="text-center py-12">
+                                    <div className="text-gray-500">Loading...</div>
+                                </div>
+                            )}
+                            
                             {activeTab === 'connect' && (
                                 <div className="text-center py-12">
                                     <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">

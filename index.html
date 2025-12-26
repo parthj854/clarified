@@ -16,9 +16,8 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
         
-        // ========== HELPER FUNCTIONS FOR FILE DOWNLOAD (ADD THESE BEFORE App COMPONENT) ==========
+        // ========== HELPER FUNCTIONS FOR FILE DOWNLOAD ==========
         
-        // Function to get file metadata from Google Drive
         async function getFileMetadata(fileId, accessToken) {
             try {
                 const response = await fetch(
@@ -37,12 +36,10 @@
             return null;
         }
 
-        // Function to download file from Google Drive as base64
         async function downloadFileAsBase64(fileId, mimeType, accessToken) {
             try {
                 let url;
                 
-                // For Google Docs/Sheets/Slides, export as PDF
                 if (mimeType.includes('google-apps')) {
                     if (mimeType.includes('document')) {
                         url = `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=application/pdf`;
@@ -58,7 +55,6 @@
                         return null;
                     }
                 } else {
-                    // Regular files (PDFs, images, etc.)
                     url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
                 }
                 
@@ -71,7 +67,6 @@
                     return null;
                 }
                 
-                // Convert to base64
                 const blob = await response.blob();
                 return new Promise((resolve, reject) => {
                     const reader = new FileReader();
@@ -84,6 +79,111 @@
                 });
             } catch (err) {
                 console.error('Error downloading file:', err);
+                return null;
+            }
+        }
+        
+        // ========== STORAGE FUNCTIONS ==========
+        
+        // Save user session to localStorage
+        function saveUserSession(user, accessToken) {
+            try {
+                localStorage.setItem('clarifi_user', JSON.stringify(user));
+                localStorage.setItem('clarifi_token', accessToken);
+                localStorage.setItem('clarifi_token_timestamp', Date.now().toString());
+                console.log('✅ Session saved to localStorage');
+            } catch (err) {
+                console.error('Failed to save session:', err);
+            }
+        }
+        
+        // Load user session from localStorage
+        function loadUserSession() {
+            try {
+                const user = localStorage.getItem('clarifi_user');
+                const token = localStorage.getItem('clarifi_token');
+                const timestamp = localStorage.getItem('clarifi_token_timestamp');
+                
+                if (user && token && timestamp) {
+                    // Check if token is older than 1 hour (Google tokens expire)
+                    const tokenAge = Date.now() - parseInt(timestamp);
+                    const oneHour = 60 * 60 * 1000;
+                    
+                    if (tokenAge < oneHour) {
+                        console.log('✅ Session loaded from localStorage');
+                        return {
+                            user: JSON.parse(user),
+                            token: token
+                        };
+                    } else {
+                        console.log('⚠️ Token expired, clearing session');
+                        clearUserSession();
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to load session:', err);
+            }
+            return null;
+        }
+        
+        // Clear user session
+        function clearUserSession() {
+            localStorage.removeItem('clarifi_user');
+            localStorage.removeItem('clarifi_token');
+            localStorage.removeItem('clarifi_token_timestamp');
+            console.log('✅ Session cleared');
+        }
+        
+        // Save analysis to localStorage
+        function saveAnalysis(courseName, gradeLevel, subject, analysis) {
+            try {
+                const analysisHistory = JSON.parse(localStorage.getItem('clarifi_history') || '[]');
+                
+                const newEntry = {
+                    id: Date.now(),
+                    courseName,
+                    gradeLevel,
+                    subject,
+                    analysis,
+                    timestamp: new Date().toISOString(),
+                    date: new Date().toLocaleDateString()
+                };
+                
+                analysisHistory.unshift(newEntry); // Add to beginning
+                
+                // Keep only last 20 analyses
+                if (analysisHistory.length > 20) {
+                    analysisHistory.pop();
+                }
+                
+                localStorage.setItem('clarifi_history', JSON.stringify(analysisHistory));
+                console.log('✅ Analysis saved to history');
+            } catch (err) {
+                console.error('Failed to save analysis:', err);
+            }
+        }
+        
+        // Load analysis history
+        function loadAnalysisHistory() {
+            try {
+                const history = localStorage.getItem('clarifi_history');
+                return history ? JSON.parse(history) : [];
+            } catch (err) {
+                console.error('Failed to load history:', err);
+                return [];
+            }
+        }
+        
+        // Delete analysis from history
+        function deleteAnalysis(id) {
+            try {
+                const history = loadAnalysisHistory();
+                const filtered = history.filter(item => item.id !== id);
+                localStorage.setItem('clarifi_history', JSON.stringify(filtered));
+                console.log('✅ Analysis deleted');
+                return filtered;
+            } catch (err) {
+                console.error('Failed to delete analysis:', err);
                 return null;
             }
         }
@@ -102,6 +202,38 @@
             const [analysis, setAnalysis] = useState(null);
             const [isAnalyzing, setIsAnalyzing] = useState(false);
             const [downloadProgress, setDownloadProgress] = useState({ current: 0, total: 0 });
+            const [analysisHistory, setAnalysisHistory] = useState([]);
+
+            // Load saved session on mount
+            useEffect(() => {
+                const savedSession = loadUserSession();
+                if (savedSession) {
+                    setUser(savedSession.user);
+                    setAccessToken(savedSession.token);
+                    setIsConnected(true);
+                    
+                    // Fetch courses with saved token
+                    fetchCourses(savedSession.token);
+                    
+                    // Start on courses tab instead of connect
+                    setActiveTab('courses');
+                }
+                
+                // Load analysis history
+                setAnalysisHistory(loadAnalysisHistory());
+            }, []);
+
+            const fetchCourses = async (token) => {
+                try {
+                    const coursesResp = await fetch('https://classroom.googleapis.com/v1/courses?courseStates=ACTIVE', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    const data = await coursesResp.json();
+                    setCourses(data.courses || []);
+                } catch (err) {
+                    console.error('Failed to fetch courses:', err);
+                }
+            };
 
             const handleGoogleSignIn = () => {
                 if (!window.google) {
@@ -111,14 +243,19 @@
                 try {
                     window.google.accounts.oauth2.initTokenClient({
                         client_id: '678343598174-cl1orhj1onnq5r79esv7sf0i6mht3p26.apps.googleusercontent.com',
-                        scope: 'https://www.googleapis.com/auth/classroom.courses.readonly https://www.googleapis.com/auth/classroom.coursework.students https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
+                        scope: 'https://www.googleapis.com/auth/classroom.courses.readonly https://www.googleapis.com/auth/classroom.coursework.students.readonly https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
                         callback: async (response) => {
                             if (response.access_token) {
                                 setAccessToken(response.access_token);
                                 const userResp = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
                                     headers: { 'Authorization': 'Bearer ' + response.access_token }
                                 });
-                                setUser(await userResp.json());
+                                const userData = await userResp.json();
+                                setUser(userData);
+                                
+                                // Save session
+                                saveUserSession(userData, response.access_token);
+                                
                                 const coursesResp = await fetch('https://classroom.googleapis.com/v1/courses?courseStates=ACTIVE', {
                                     headers: { 'Authorization': 'Bearer ' + response.access_token }
                                 });
@@ -134,6 +271,16 @@
                 }
             };
 
+            const handleSignOut = () => {
+                clearUserSession();
+                setIsConnected(false);
+                setActiveTab('connect');
+                setCourses([]);
+                setCourseData(null);
+                setUser(null);
+                setAccessToken(null);
+            };
+
             const startDemo = () => {
                 setUser({ name: 'Demo Teacher', email: 'demo@school.edu' });
                 setAccessToken('demo');
@@ -147,7 +294,6 @@
             const selectCourse = async (courseId) => {
                 try {
                     if (accessToken === 'demo') {
-                        // Demo mode
                         setCourseData({
                             courseName: 'Grade 7 Mathematics (Demo)',
                             assignments: [
@@ -161,12 +307,8 @@
                     }
 
                     console.log('🔍 Fetching course data for courseId:', courseId);
-                    console.log('🔑 Access token:', accessToken ? 'Present (length: ' + accessToken.length + ')' : 'Missing!');
 
-                    // FETCH REAL ASSIGNMENTS FROM GOOGLE CLASSROOM
                     const courseworkUrl = `https://classroom.googleapis.com/v1/courses/${courseId}/courseWork?pageSize=100`;
-                    console.log('📡 Fetching from:', courseworkUrl);
-                    
                     const courseworkResponse = await fetch(courseworkUrl, {
                         headers: { 
                             'Authorization': 'Bearer ' + accessToken,
@@ -174,15 +316,12 @@
                         }
                     });
 
-                    console.log('📥 Coursework response status:', courseworkResponse.status);
-
                     if (!courseworkResponse.ok) {
                         const errorText = await courseworkResponse.text();
                         console.error('❌ Coursework API Error:', errorText);
-                        throw new Error(`API returned ${courseworkResponse.status}: ${errorText.substring(0, 200)}`);
+                        throw new Error(`API returned ${courseworkResponse.status}`);
                     }
 
-                    // FETCH REAL COURSE MATERIALS
                     const materialsUrl = `https://classroom.googleapis.com/v1/courses/${courseId}/courseWorkMaterials?pageSize=100`;
                     const materialsResponse = await fetch(materialsUrl, {
                         headers: { 
@@ -191,14 +330,9 @@
                         }
                     });
 
-                    console.log('📥 Materials response status:', materialsResponse.status);
-
                     const courseworkData = await courseworkResponse.json();
                     const materialsData = materialsResponse.ok ? await materialsResponse.json() : { courseWorkMaterial: [] };
 
-                    console.log('📊 Raw coursework data:', courseworkData);
-
-                    // Process REAL assignments
                     const realAssignments = (courseworkData.courseWork || []).map(work => ({
                         id: work.id,
                         title: work.title,
@@ -210,17 +344,12 @@
                         state: work.state
                     }));
 
-                    // Process REAL materials
                     const realMaterials = (materialsData.courseWorkMaterial || []).map(material => ({
                         id: material.id,
                         title: material.title,
                         description: material.description || 'No description',
                         materials: material.materials || []
                     }));
-
-                    console.log('✅ Successfully loaded:', realAssignments.length, 'assignments');
-                    console.log('✅ Successfully loaded:', realMaterials.length, 'materials');
-                    console.log('📝 Assignments:', realAssignments);
 
                     setCourseData({
                         courseName: courses.find(c => c.id === courseId)?.name || 'Course',
@@ -232,13 +361,8 @@
                     setActiveTab('setup');
                 } catch (err) {
                     console.error('❌ FULL ERROR DETAILS:', err);
-                    console.error('Error name:', err.name);
-                    console.error('Error message:', err.message);
-                    console.error('Error stack:', err.stack);
+                    alert('Could not load assignments. Error: ' + err.message);
                     
-                    alert('Could not load real assignments. Error: ' + err.message + '\n\nCheck browser console (F12) for details.\n\nUsing demo data instead.');
-                    
-                    // Fallback to demo data
                     setCourseData({
                         courseName: 'Grade 7 Mathematics (Demo - Error Loading Real Data)',
                         assignments: [
@@ -261,11 +385,9 @@
                 try {
                     console.log('🤖 Starting AI analysis with document content...');
                     
-                    // Download all files from assignments
                     const filesData = [];
                     let totalFiles = 0;
                     
-                    // Count total files first
                     for (const assignment of courseData.assignments) {
                         if (assignment.materials && assignment.materials.length > 0) {
                             for (const material of assignment.materials) {
@@ -293,7 +415,6 @@
                                         console.log(`📥 Downloading file ${currentFile}/${totalFiles}: ${fileName}`);
                                         
                                         try {
-                                            // Get file metadata to know the MIME type
                                             const metadata = await getFileMetadata(fileId, accessToken);
                                             
                                             if (metadata) {
@@ -310,8 +431,6 @@
                                                         base64: base64Data
                                                     });
                                                     console.log(`✅ Downloaded: ${fileName}`);
-                                                } else {
-                                                    console.log(`⚠️ Could not download: ${fileName} (unsupported type or error)`);
                                                 }
                                             }
                                         } catch (fileErr) {
@@ -324,9 +443,8 @@
                     }
                     
                     console.log(`📦 Total files downloaded: ${filesData.length}`);
-
-                    // Send to backend with files
                     console.log('📤 Sending to backend API...');
+                    
                     const response = await fetch('https://clarifi-ed-backend.vercel.app/api/analyze', {
                         method: 'POST',
                         headers: {
@@ -337,34 +455,34 @@
                             gradeLevel: gradeLevel,
                             subject: subject,
                             courseName: courseData.courseName,
-                            filesData: filesData // Include the downloaded files
+                            filesData: filesData
                         })
                     });
-
-                    console.log('📥 Response status:', response.status);
 
                     if (!response.ok) {
                         throw new Error(`Backend API error: ${response.status}`);
                     }
 
                     const analysisResult = await response.json();
-                    console.log('✅ Backend response:', analysisResult);
 
-                    // Check if backend returned an error
                     if (analysisResult.error) {
                         throw new Error(analysisResult.message || analysisResult.error);
                     }
 
                     setAnalysis(analysisResult);
+                    
+                    // Save to history
+                    saveAnalysis(courseData.courseName, gradeLevel, subject, analysisResult);
+                    setAnalysisHistory(loadAnalysisHistory());
+                    
                     setActiveTab('results');
                 } catch (err) {
                     console.error('❌ AI Analysis Error:', err);
-                    alert('AI analysis failed: ' + err.message + '\n\nUsing demo results for now. Check console for details.');
+                    alert('AI analysis failed: ' + err.message);
                     
-                    // Fallback to demo data
-                    setAnalysis({
+                    const demoAnalysis = {
                         score: 72,
-                        summary: 'Demo results (AI analysis failed). Moderate alignment with CA Common Core Standards.',
+                        summary: 'Demo results (AI analysis failed).',
                         domains: { 
                             '7.RP (Ratios)': 80, 
                             '7.NS (Number System)': 65, 
@@ -381,11 +499,26 @@
                         recommendations: [
                             { priority: 'CRITICAL', standard: '7.SP', action: 'Demo action', timeframe: 'Demo timeframe', rationale: 'Demo rationale' }
                         ]
-                    });
+                    };
+                    setAnalysis(demoAnalysis);
                     setActiveTab('results');
                 } finally {
                     setIsAnalyzing(false);
                     setDownloadProgress({ current: 0, total: 0 });
+                }
+            };
+
+            const loadPreviousAnalysis = (historyItem) => {
+                setAnalysis(historyItem.analysis);
+                setActiveTab('results');
+            };
+
+            const handleDeleteAnalysis = (id) => {
+                if (confirm('Delete this analysis from history?')) {
+                    const updated = deleteAnalysis(id);
+                    if (updated) {
+                        setAnalysisHistory(updated);
+                    }
                 }
             };
 
@@ -405,7 +538,7 @@
                                             <div className="text-sm font-medium">{user.name}</div>
                                             <div className="text-xs text-gray-500">{user.email}</div>
                                         </div>
-                                        <button onClick={() => { setIsConnected(false); setActiveTab('connect'); setCourses([]); setCourseData(null); }} className="px-4 py-2 bg-gray-200 rounded-lg text-sm hover:bg-gray-300">Sign Out</button>
+                                        <button onClick={handleSignOut} className="px-4 py-2 bg-gray-200 rounded-lg text-sm hover:bg-gray-300">Sign Out</button>
                                     </div>
                                 )}
                             </div>
@@ -413,7 +546,7 @@
 
                         <div className="bg-white rounded-lg shadow-lg mb-6">
                             <div className="flex border-b overflow-x-auto">
-                                {['connect', 'courses', 'setup', 'results'].map(tab => (
+                                {['connect', 'courses', 'setup', 'history', 'results'].map(tab => (
                                     <button
                                         key={tab}
                                         onClick={() => setActiveTab(tab)}
@@ -421,6 +554,9 @@
                                         className={'flex-1 py-4 px-6 font-medium capitalize whitespace-nowrap ' + (activeTab === tab ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-gray-500') + (!isConnected && tab !== 'connect' ? ' opacity-50 cursor-not-allowed' : '')}
                                     >
                                         {tab}
+                                        {tab === 'history' && analysisHistory.length > 0 && (
+                                            <span className="ml-2 bg-indigo-100 text-indigo-600 text-xs px-2 py-1 rounded-full">{analysisHistory.length}</span>
+                                        )}
                                     </button>
                                 ))}
                             </div>
@@ -470,12 +606,61 @@
                                             >
                                                 <h3 className="font-semibold text-lg mb-2">{course.name}</h3>
                                                 <p className="text-sm text-gray-600">{course.section || 'No section info'}</p>
-                                                {course.descriptionHeading && (
-                                                    <p className="text-xs text-gray-500 mt-2">{course.descriptionHeading}</p>
-                                                )}
                                             </button>
                                         ))}
                                     </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'history' && (
+                                <div>
+                                    <h2 className="text-2xl font-bold mb-6">Analysis History</h2>
+                                    {analysisHistory.length === 0 ? (
+                                        <div className="text-center py-12">
+                                            <p className="text-gray-500 mb-4">No previous analyses found</p>
+                                            <button 
+                                                onClick={() => setActiveTab('courses')} 
+                                                className="text-indigo-600 hover:text-indigo-700 underline"
+                                            >
+                                                Analyze your first course
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            {analysisHistory.map(item => (
+                                                <div key={item.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                                                    <div className="flex justify-between items-start">
+                                                        <div className="flex-1">
+                                                            <h3 className="font-semibold text-lg">{item.courseName}</h3>
+                                                            <p className="text-sm text-gray-600">
+                                                                Grade {item.gradeLevel} {item.subject} • {item.date}
+                                                            </p>
+                                                            <div className="mt-2 flex items-center gap-4">
+                                                                <span className="text-2xl font-bold text-indigo-600">{item.analysis.score}%</span>
+                                                                <span className="text-sm text-gray-500">
+                                                                    {item.analysis.score >= 80 ? '🟢 Strong' : item.analysis.score >= 60 ? '🟡 Moderate' : '🔴 Needs Work'}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                onClick={() => loadPreviousAnalysis(item)}
+                                                                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                                                            >
+                                                                View
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDeleteAnalysis(item.id)}
+                                                                className="px-4 py-2 bg-red-100 text-red-600 rounded hover:bg-red-200"
+                                                            >
+                                                                Delete
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
@@ -487,9 +672,6 @@
                                             <h3 className="font-semibold text-lg">{courseData.courseName}</h3>
                                             {accessToken !== 'demo' && (
                                                 <span className="text-xs bg-green-100 text-green-800 px-3 py-1 rounded-full">Real Google Classroom Data</span>
-                                            )}
-                                            {accessToken === 'demo' && (
-                                                <span className="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full">Demo Mode</span>
                                             )}
                                         </div>
 
@@ -513,9 +695,6 @@
 
                                         <div>
                                             <h4 className="font-medium mb-3">📚 Assignments Found: {courseData.assignments.length}</h4>
-                                            {courseData.assignments.length === 0 && (
-                                                <p className="text-gray-500 text-sm italic">No assignments found in this course</p>
-                                            )}
                                             <div className="space-y-3 max-h-96 overflow-y-auto">
                                                 {courseData.assignments.map(a => (
                                                     <div key={a.id} className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
@@ -549,23 +728,8 @@
                                                 ))}
                                             </div>
                                         </div>
-
-                                        {courseData.materials && courseData.materials.length > 0 && (
-                                            <div className="mt-6">
-                                                <h4 className="font-medium mb-3">📑 Course Materials: {courseData.materials.length}</h4>
-                                                <div className="space-y-2">
-                                                    {courseData.materials.map(m => (
-                                                        <div key={m.id} className="bg-blue-50 p-3 rounded border border-blue-100 text-sm">
-                                                            <div className="font-medium text-blue-900">{m.title}</div>
-                                                            <div className="text-xs text-blue-700 mt-1">{m.description}</div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
                                     </div>
 
-                                    {/* Download Progress Indicator */}
                                     {downloadProgress.total > 0 && (
                                         <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
                                             <div className="flex items-center justify-between mb-2">
@@ -638,7 +802,6 @@
                                         </div>
                                     </div>
 
-                                    {/* STANDARDS MET */}
                                     <div className="bg-green-50 border-2 border-green-300 rounded-lg p-6">
                                         <h3 className="text-2xl font-bold mb-4 text-green-900 flex items-center gap-2">
                                             ✅ Standards Currently Met ({analysis.standardsMet.length})
@@ -660,17 +823,10 @@
                                         </div>
                                     </div>
 
-                                    {/* STANDARDS NOT MET */}
                                     <div className="bg-red-50 border-2 border-red-300 rounded-lg p-6">
                                         <h3 className="text-2xl font-bold mb-4 text-red-900 flex items-center gap-2">
                                             ❌ Standards NOT Being Met ({analysis.standardsNotMet.length})
                                         </h3>
-                                        <div className="bg-red-100 border border-red-300 rounded-lg p-4 mb-4">
-                                            <p className="text-sm text-red-900 font-semibold">
-                                                ⚠️ CRITICAL: {analysis.standardsNotMet.length} standards are not addressed. 
-                                                Students will have significant gaps in their Grade 7 mathematics knowledge.
-                                            </p>
-                                        </div>
                                         <div className="space-y-3 max-h-96 overflow-y-auto">
                                             {analysis.standardsNotMet.map((std, i) => (
                                                 <div key={i} className="bg-white rounded-lg p-4 border border-red-200">
@@ -695,7 +851,6 @@
                                         </div>
                                     </div>
 
-                                    {/* RECOMMENDATIONS */}
                                     <div className="bg-amber-50 border-2 border-amber-300 rounded-lg p-6">
                                         <h3 className="text-2xl font-bold mb-4 text-amber-900">💡 Prioritized Action Plan</h3>
                                         <div className="space-y-4">

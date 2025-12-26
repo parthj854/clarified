@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In - ClarifiEd AI</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --cream: #F8F6F3;
+            --cream-dark: #F2EFE9;
+            --navy: #1A3A52;
+            --navy-light: #2B5573;
+            --orange: #FF6B35;
+            --orange-light: #FF8359;
+        }
+        
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background-color: var(--cream);
+            color: var(--navy);
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Outfit', sans-serif;
+        }
+        
+        .bg-cream { background-color: var(--cream); }
+        .bg-navy { background-color: var(--navy); }
+        .bg-orange { background-color: var(--orange); }
+        .text-navy { color: var(--navy); }
+        .text-orange { color: var(--orange); }
+        .hover\:bg-orange-light:hover { background-color: var(--orange-light); }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div class="min-h-screen flex">
+        <!-- Left side - Form -->
+        <div class="flex-1 flex items-center justify-center p-8 bg-cream">
+            <div class="w-full max-w-md space-y-8">
+                <div class="text-center">
+                    <!-- Logo -->
+                    <div class="flex items-center justify-center gap-2 mb-6">
+                        <svg class="w-12 h-12 text-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                        </svg>
+                        <span class="text-2xl font-bold">
+                            <span class="text-navy">Clarifi</span><span class="text-orange">Ed</span>
+                        </span>
+                    </div>
+                    
+                    <h1 id="form-title" class="text-3xl font-bold text-navy">Welcome back</h1>
+                    <p id="form-subtitle" class="text-gray-600 mt-2">
+                        Sign in to access your analysis dashboard
+                    </p>
+                </div>
+
+                <!-- Google Sign-In Button -->
+                <div class="space-y-4">
+                    <button onclick="handleGoogleSignIn()" class="w-full flex items-center justify-center gap-3 px-6 py-3 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                        <svg class="h-5 w-5" viewBox="0 0 24 24">
+                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                        </svg>
+                        <span class="font-medium text-navy">Sign in with Google</span>
+                    </button>
+
+                    <div class="relative">
+                        <div class="absolute inset-0 flex items-center">
+                            <div class="w-full border-t border-gray-300"></div>
+                        </div>
+                        <div class="relative flex justify-center text-sm">
+                            <span class="px-4 bg-cream text-gray-500">Or continue as demo</span>
+                        </div>
+                    </div>
+
+                    <button onclick="handleDemo()" class="w-full px-6 py-3 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-navy font-medium">
+                        Try Demo Mode
+                    </button>
+                </div>
+
+                <div class="text-center">
+                    <a href="index.html" class="text-orange hover:underline font-medium">
+                        ← Back to home
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right side - Decorative -->
+        <div class="hidden lg:flex flex-1 bg-navy items-center justify-center p-12">
+            <div class="max-w-lg text-center text-white">
+                <h2 class="text-4xl font-bold mb-6">
+                    Align Your Teaching to Standards
+                </h2>
+                <p class="text-xl opacity-90 mb-8">
+                    ClarifiEd AI analyzes your Google Classroom assignments and shows you exactly 
+                    how they map to Common Core standards.
+                </p>
+                <div class="grid grid-cols-3 gap-6 text-center">
+                    <div class="bg-white/10 rounded-xl p-4">
+                        <div class="text-3xl font-bold">AI</div>
+                        <div class="text-sm opacity-80">Powered</div>
+                    </div>
+                    <div class="bg-white/10 rounded-xl p-4">
+                        <div class="text-3xl font-bold">50+</div>
+                        <div class="text-sm opacity-80">Standards</div>
+                    </div>
+                    <div class="bg-white/10 rounded-xl p-4">
+                        <div class="text-3xl font-bold">Fast</div>
+                        <div class="text-sm opacity-80">Analysis</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Save user session to localStorage
+        function saveUserSession(user, accessToken) {
+            try {
+                localStorage.setItem('clarifi_user', JSON.stringify(user));
+                localStorage.setItem('clarifi_token', accessToken);
+                localStorage.setItem('clarifi_token_timestamp', Date.now().toString());
+                console.log('✅ Session saved');
+            } catch (err) {
+                console.error('Failed to save session:', err);
+            }
+        }
+
+        // Handle Google Sign In
+        function handleGoogleSignIn() {
+            if (!window.google) {
+                alert('Google Sign-In is loading. Please wait a moment and try again.');
+                return;
+            }
+            
+            try {
+                window.google.accounts.oauth2.initTokenClient({
+                    client_id: '678343598174-cl1orhj1onnq5r79esv7sf0i6mht3p26.apps.googleusercontent.com',
+                    scope: 'https://www.googleapis.com/auth/classroom.courses.readonly https://www.googleapis.com/auth/classroom.coursework.students.readonly https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
+                    callback: async (response) => {
+                        if (response.access_token) {
+                            console.log('✅ Signed in successfully');
+                            
+                            // Get user info
+                            const userResp = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+                                headers: { 'Authorization': 'Bearer ' + response.access_token }
+                            });
+                            const userData = await userResp.json();
+                            
+                            // Save session
+                            saveUserSession(userData, response.access_token);
+                            
+                            // Redirect to dashboard
+                            window.location.href = 'dashboard.html';
+                        }
+                    }
+                }).requestAccessToken();
+            } catch (err) {
+                console.error('Sign-in error:', err);
+                alert('Sign-in failed: ' + err.message);
+            }
+        }
+
+        // Handle Demo Mode
+        function handleDemo() {
+            // Save demo session
+            const demoUser = { name: 'Demo Teacher', email: 'demo@school.edu', demo: true };
+            saveUserSession(demoUser, 'demo');
+            
+            // Redirect to dashboard
+            window.location.href = 'dashboard.html';
+        }
+
+        // Check if already logged in
+        window.onload = () => {
+            const token = localStorage.getItem('clarifi_token');
+            const timestamp = localStorage.getItem('clarifi_token_timestamp');
+            
+            if (token && timestamp) {
+                // Check if token is still valid (less than 1 hour old)
+                const tokenAge = Date.now() - parseInt(timestamp);
+                const oneHour = 60 * 60 * 1000;
+                
+                if (tokenAge < oneHour) {
+                    // Still logged in, redirect to dashboard
+                    console.log('Already logged in, redirecting to dashboard...');
+                    window.location.href = 'dashboard.html';
+                }
+            }
+        };
+    </script>
+</body>
+</html>

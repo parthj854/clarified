@@ -182,13 +182,55 @@
                         subject: metadata.subject,
                         base64: base64,
                         uploadDate: new Date().toLocaleDateString(),
-                        type: 'Manual Upload'
+                        type: 'Manual Upload',
+                        analyzed: false,
+                        analyzing: false,
+                        alignmentScore: null
                     };
                     resolve(pdfData);
                 };
                 reader.onerror = reject;
                 reader.readAsDataURL(file);
             });
+        }
+        
+        // Analyze individual PDF
+        async function analyzeSinglePDF(pdf) {
+            try {
+                const response = await fetch('https://clarifi-ed-backend.vercel.app/api/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        assignments: [{
+                            id: pdf.id,
+                            title: pdf.title,
+                            description: pdf.description,
+                            type: 'Manual Upload'
+                        }],
+                        gradeLevel: pdf.gradeLevel,
+                        subject: pdf.subject,
+                        courseName: pdf.title,
+                        filesData: [{
+                            fileName: pdf.fileName,
+                            assignmentTitle: pdf.title,
+                            base64: pdf.base64
+                        }]
+                    })
+                });
+
+                if (!response.ok) throw new Error(`Analysis failed: ${response.status}`);
+
+                const result = await response.json();
+                if (result.error) throw new Error(result.message || result.error);
+
+                return {
+                    ...result,
+                    pdfId: pdf.id
+                };
+            } catch (err) {
+                console.error('Analysis error:', err);
+                throw err;
+            }
         }
         
         // ========== APP COMPONENT ==========
@@ -512,14 +554,14 @@
                                     <div className="grid md:grid-cols-3 gap-6">
                                         <StatCard
                                             title="Total Assignments"
-                                            value={courseData?.assignments.length || 0}
-                                            subtitle="imported from Google Classroom"
+                                            value={(courseData?.assignments.length || 0) + uploadedPDFs.length}
+                                            subtitle={`${courseData?.assignments.length || 0} from Classroom + ${uploadedPDFs.length} uploaded`}
                                             icon="📚"
                                         />
                                         <StatCard
                                             title="Analyzed"
-                                            value={analysisHistory.length}
-                                            subtitle={analysisHistory.length > 0 ? `${Math.round((analysisHistory.length / (courseData?.assignments.length || 1)) * 100)}% completion` : 'No assignments yet'}
+                                            value={uploadedPDFs.filter(p => p.analyzed).length + analysisHistory.length}
+                                            subtitle={`${uploadedPDFs.filter(p => p.analyzing).length} analyzing now`}
                                             icon="🎯"
                                         />
                                         <StatCard
@@ -612,14 +654,55 @@
                                             <h2 className="text-lg font-bold text-navy mb-4">Manually Uploaded PDFs ({uploadedPDFs.length})</h2>
                                             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                                                 {uploadedPDFs.map(pdf => (
-                                                    <div key={pdf.id} className="bg-white p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
+                                                    <div 
+                                                        key={pdf.id} 
+                                                        className={'bg-white p-6 rounded-xl border-2 transition-all ' + (pdf.analyzed ? 'border-green-300 hover:shadow-lg cursor-pointer' : pdf.analyzing ? 'border-blue-300 animate-pulse' : 'border-gray-200 hover:shadow-lg')}
+                                                        onClick={() => {
+                                                            if (pdf.analyzed && pdf.analysisData) {
+                                                                setAnalysis(pdf.analysisData);
+                                                                setActiveView('analytics');
+                                                            }
+                                                        }}
+                                                    >
                                                         <div className="flex justify-between items-start mb-3">
                                                             <div className="flex-1">
-                                                                <h3 className="font-bold text-lg text-navy mb-1">{pdf.title}</h3>
+                                                                <div className="flex items-center gap-2 mb-1">
+                                                                    <h3 className="font-bold text-lg text-navy">{pdf.title}</h3>
+                                                                    {pdf.analyzed && (
+                                                                        <span className={'text-lg font-bold ' + (pdf.alignmentScore >= 80 ? 'text-green-600' : pdf.alignmentScore >= 60 ? 'text-yellow-600' : 'text-red-500')}>
+                                                                            {pdf.alignmentScore}%
+                                                                        </span>
+                                                                    )}
+                                                                </div>
                                                                 <p className="text-sm text-gray-600 mb-2">{pdf.description}</p>
+                                                                
+                                                                {/* Analysis Status */}
+                                                                {pdf.analyzing && (
+                                                                    <div className="flex items-center gap-2 text-blue-600 text-sm font-medium">
+                                                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                                                                        <span>Analyzing...</span>
+                                                                    </div>
+                                                                )}
+                                                                {pdf.analyzed && (
+                                                                    <div className="flex items-center gap-2 text-green-600 text-sm font-medium">
+                                                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
+                                                                        </svg>
+                                                                        <span>Analyzed • Click to view results</span>
+                                                                    </div>
+                                                                )}
+                                                                {pdf.analysisFailed && (
+                                                                    <div className="flex items-center gap-2 text-red-600 text-sm font-medium">
+                                                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd"></path>
+                                                                        </svg>
+                                                                        <span>Analysis Failed</span>
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                             <button
-                                                                onClick={() => {
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
                                                                     if (confirm('Delete this PDF?')) {
                                                                         setUploadedPDFs(uploadedPDFs.filter(p => p.id !== pdf.id));
                                                                     }
@@ -677,12 +760,45 @@
                                                         }
 
                                                         try {
+                                                            // Upload PDF
                                                             const pdfData = await handlePDFUpload(file, pdfMetadata);
-                                                            setUploadedPDFs([...uploadedPDFs, pdfData]);
+                                                            
+                                                            // Add to uploaded PDFs with analyzing state
+                                                            const newPDF = { ...pdfData, analyzing: true };
+                                                            setUploadedPDFs([...uploadedPDFs, newPDF]);
                                                             setShowUploadModal(false);
                                                             setPdfMetadata({ title: '', description: '', gradeLevel: '', subject: '' });
                                                             fileInput.value = '';
-                                                            alert('PDF uploaded successfully!');
+                                                            
+                                                            // Start analysis
+                                                            try {
+                                                                const analysisResult = await analyzeSinglePDF(pdfData);
+                                                                
+                                                                // Update PDF with analysis results
+                                                                setUploadedPDFs(prev => prev.map(p => 
+                                                                    p.id === pdfData.id 
+                                                                        ? { ...p, analyzed: true, analyzing: false, alignmentScore: analysisResult.score, analysisData: analysisResult }
+                                                                        : p
+                                                                ));
+                                                                
+                                                                // Save to history
+                                                                saveAnalysis(pdfData.title, pdfData.gradeLevel, pdfData.subject, analysisResult);
+                                                                setAnalysisHistory(loadAnalysisHistory());
+                                                                
+                                                                // Show success and offer to view results
+                                                                if (confirm(`PDF analyzed! Alignment Score: ${analysisResult.score}%\n\nView full analysis now?`)) {
+                                                                    setAnalysis(analysisResult);
+                                                                    setActiveView('analytics');
+                                                                }
+                                                            } catch (analysisErr) {
+                                                                console.error('Analysis failed:', analysisErr);
+                                                                setUploadedPDFs(prev => prev.map(p => 
+                                                                    p.id === pdfData.id 
+                                                                        ? { ...p, analyzing: false, analysisFailed: true }
+                                                                        : p
+                                                                ));
+                                                                alert('PDF uploaded but analysis failed: ' + analysisErr.message);
+                                                            }
                                                         } catch (err) {
                                                             alert('Failed to upload PDF: ' + err.message);
                                                         }

@@ -252,17 +252,8 @@
             const [uploadedPDFs, setUploadedPDFs] = useState([]);
             const [showUploadModal, setShowUploadModal] = useState(false);
             const [pdfMetadata, setPdfMetadata] = useState({ title: '', description: '', gradeLevel: '', subject: '' });
-            
-            // CREATE & LIBRARY STATE
             const [generatedContent, setGeneratedContent] = useState([]);
-            const [createFormData, setCreateFormData] = useState({
-                contentType: 'lesson_plan',
-                topic: '',
-                gradeLevel: '',
-                subject: '',
-                duration: '45',
-                additionalNotes: ''
-            });
+            const [createFormData, setCreateFormData] = useState({ contentType: 'lesson_plan', topic: '', gradeLevel: '', subject: '', duration: '45', additionalNotes: '' });
             const [isGenerating, setIsGenerating] = useState(false);
             const [libraryFilters, setLibraryFilters] = useState({ search: '', type: 'all', subject: 'all' });
 
@@ -283,7 +274,7 @@
                 }
                 
                 setAnalysisHistory(loadAnalysisHistory());
-                setGeneratedContent(JSON.parse(localStorage.getItem('clarifi_library') || '[]'));
+                try { setGeneratedContent(JSON.parse(localStorage.getItem('clarifi_library') || '[]')); } catch(e) {}
             }, []);
 
             const fetchCourses = async (token) => {
@@ -447,7 +438,7 @@
                     setDownloadProgress({ current: 0, total: 0 });
                 }
             };
-            
+
             const handleGenerateContent = async () => {
                 if (!createFormData.topic.trim() || !createFormData.gradeLevel || !createFormData.subject) {
                     alert('Please fill in all required fields');
@@ -457,37 +448,27 @@
                 try {
                     await new Promise(resolve => setTimeout(resolve, 2000));
                     const newContent = {
-                        id: Date.now(),
-                        contentType: createFormData.contentType,
-                        title: createFormData.topic,
-                        content: `[AI-Generated Content]\n\nTopic: ${createFormData.topic}\nGrade: ${createFormData.gradeLevel}\nSubject: ${createFormData.subject}\n\nThis ${createFormData.contentType.replace('_', ' ')} has been generated. Connect to your AI backend to create real content.`,
-                        gradeLevel: createFormData.gradeLevel,
-                        subject: createFormData.subject,
-                        duration: createFormData.duration,
-                        standardsAligned: ['Standard 1', 'Standard 2'],
+                        id: Date.now(), contentType: createFormData.contentType, title: createFormData.topic,
+                        content: 'Generated content for ' + createFormData.topic + '. Grade ' + createFormData.gradeLevel + ' ' + createFormData.subject + '.',
+                        gradeLevel: createFormData.gradeLevel, subject: createFormData.subject,
+                        duration: createFormData.duration, standardsAligned: ['Standard 1', 'Standard 2'],
                         createdAt: new Date().toLocaleDateString()
                     };
                     setGeneratedContent([newContent, ...generatedContent]);
-                    const library = JSON.parse(localStorage.getItem('clarifi_library') || '[]');
-                    library.unshift(newContent);
-                    localStorage.setItem('clarifi_library', JSON.stringify(library));
-                    setCreateFormData({
-                        contentType: 'lesson_plan',
-                        topic: '',
-                        gradeLevel: '',
-                        subject: '',
-                        duration: '45',
-                        additionalNotes: ''
-                    });
-                    alert('Content generated!\n\nView in Library.');
+                    try {
+                        const library = JSON.parse(localStorage.getItem('clarifi_library') || '[]');
+                        library.unshift(newContent);
+                        localStorage.setItem('clarifi_library', JSON.stringify(library));
+                    } catch(e) {}
+                    setCreateFormData({ contentType: 'lesson_plan', topic: '', gradeLevel: '', subject: '', duration: '45', additionalNotes: '' });
+                    alert('Content generated! View in Library.');
                     setActiveView('library');
                 } catch (err) {
-                    alert('Generation failed: ' + err.message);
+                    alert('Generation failed');
                 } finally {
                     setIsGenerating(false);
                 }
             };
-
 
             const loadPreviousAnalysis = (historyItem) => {
                 setAnalysis(historyItem.analysis);
@@ -678,77 +659,24 @@
                                 </div>
                             )}
 
-
                             {activeView === 'create' && (
                                 <div className="max-w-4xl mx-auto space-y-6">
-                                    <div>
-                                        <h1 className="text-3xl font-bold text-navy">Create New Content</h1>
-                                        <p className="text-gray-600 mt-1">Generate standards-aligned lesson plans, assessments, and worksheets</p>
-                                    </div>
+                                    <div><h1 className="text-3xl font-bold text-navy">Create New Content</h1><p className="text-gray-600 mt-1">Generate standards-aligned lesson plans, assessments, and worksheets</p></div>
                                     <div className="bg-white rounded-2xl border border-gray-200">
                                         <div className="flex border-b border-gray-200">
-                                            {[
-                                                {id: 'lesson_plan', label: 'Lesson Plan', icon: '📖'},
-                                                {id: 'assessment', label: 'Assessment', icon: '📋'},
-                                                {id: 'worksheet', label: 'Worksheet', icon: '📄'}
-                                            ].map(type => (
-                                                <button key={type.id} onClick={() => setCreateFormData({...createFormData, contentType: type.id})}
-                                                    className={'flex-1 flex items-center justify-center gap-2 px-6 py-4 font-medium transition-colors ' + (createFormData.contentType === type.id ? 'bg-navy/5 text-navy border-b-2 border-navy' : 'text-gray-600 hover:bg-gray-50')}>
-                                                    <span className="text-xl">{type.icon}</span><span>{type.label}</span>
-                                                </button>
+                                            {[{id: 'lesson_plan', label: 'Lesson Plan', icon: '📖'}, {id: 'assessment', label: 'Assessment', icon: '📋'}, {id: 'worksheet', label: 'Worksheet', icon: '📄'}].map(type => (
+                                                <button key={type.id} onClick={() => setCreateFormData({...createFormData, contentType: type.id})} className={'flex-1 flex items-center justify-center gap-2 px-6 py-4 font-medium ' + (createFormData.contentType === type.id ? 'bg-navy/5 text-navy border-b-2 border-navy' : 'text-gray-600 hover:bg-gray-50')}><span className="text-xl">{type.icon}</span><span>{type.label}</span></button>
                                             ))}
                                         </div>
                                         <div className="p-8 space-y-6">
-                                            <div>
-                                                <label className="block text-sm font-medium mb-2">Topic / Learning Objective *</label>
-                                                <textarea value={createFormData.topic} onChange={e => setCreateFormData({...createFormData, topic: e.target.value})}
-                                                    placeholder={createFormData.contentType === 'lesson_plan' ? 'e.g., Introduction to fractions with visual models...' : createFormData.contentType === 'assessment' ? 'e.g., Chapter 5 quiz on American Revolution...' : 'e.g., Practice problems for decimals...'}
-                                                    className="w-full border-2 border-gray-200 rounded-lg px-4 py-3 min-h-24 resize-none" rows={3} />
-                                            </div>
+                                            <div><label className="block text-sm font-medium mb-2">Topic / Learning Objective *</label><textarea value={createFormData.topic} onChange={e => setCreateFormData({...createFormData, topic: e.target.value})} placeholder="Enter topic..." className="w-full border-2 border-gray-200 rounded-lg px-4 py-3 min-h-24 resize-none" rows={3} /></div>
                                             <div className="grid md:grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className="block text-sm font-medium mb-2">Grade Level *</label>
-                                                    <select value={createFormData.gradeLevel} onChange={e => setCreateFormData({...createFormData, gradeLevel: e.target.value})} className="w-full border-2 border-gray-200 rounded-lg px-4 py-3">
-                                                        <option value="">Select grade...</option>
-                                                        {['K', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'].map(g => <option key={g} value={g}>Grade {g}</option>)}
-                                                    </select>
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-medium mb-2">Subject *</label>
-                                                    <select value={createFormData.subject} onChange={e => setCreateFormData({...createFormData, subject: e.target.value})} className="w-full border-2 border-gray-200 rounded-lg px-4 py-3">
-                                                        <option value="">Select subject...</option>
-                                                        <option value="English Language Arts">English Language Arts</option>
-                                                        <option value="Mathematics">Mathematics</option>
-                                                        <option value="Science">Science</option>
-                                                        <option value="Social Studies">Social Studies</option>
-                                                        <option value="History">History</option>
-                                                    </select>
-                                                </div>
+                                                <div><label className="block text-sm font-medium mb-2">Grade Level *</label><select value={createFormData.gradeLevel} onChange={e => setCreateFormData({...createFormData, gradeLevel: e.target.value})} className="w-full border-2 border-gray-200 rounded-lg px-4 py-3"><option value="">Select grade...</option>{['K', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'].map(g => <option key={g} value={g}>Grade {g}</option>)}</select></div>
+                                                <div><label className="block text-sm font-medium mb-2">Subject *</label><select value={createFormData.subject} onChange={e => setCreateFormData({...createFormData, subject: e.target.value})} className="w-full border-2 border-gray-200 rounded-lg px-4 py-3"><option value="">Select subject...</option><option value="English Language Arts">English Language Arts</option><option value="Mathematics">Mathematics</option><option value="Science">Science</option><option value="Social Studies">Social Studies</option><option value="History">History</option></select></div>
                                             </div>
-                                            {createFormData.contentType === 'lesson_plan' && (
-                                                <div>
-                                                    <label className="block text-sm font-medium mb-2">Class Duration (minutes)</label>
-                                                    <select value={createFormData.duration} onChange={e => setCreateFormData({...createFormData, duration: e.target.value})} className="w-40 border-2 border-gray-200 rounded-lg px-4 py-3">
-                                                        <option value="30">30 minutes</option>
-                                                        <option value="45">45 minutes</option>
-                                                        <option value="60">60 minutes</option>
-                                                        <option value="90">90 minutes</option>
-                                                    </select>
-                                                </div>
-                                            )}
-                                            <div>
-                                                <label className="block text-sm font-medium mb-2">Additional Instructions (Optional)</label>
-                                                <textarea value={createFormData.additionalNotes} onChange={e => setCreateFormData({...createFormData, additionalNotes: e.target.value})}
-                                                    placeholder="Any specific requirements, accommodations, or focus areas..." className="w-full border-2 border-gray-200 rounded-lg px-4 py-3 resize-none" rows={2} />
-                                            </div>
-                                            <button onClick={handleGenerateContent} disabled={isGenerating || !createFormData.topic.trim() || !createFormData.gradeLevel || !createFormData.subject}
-                                                className="w-full bg-navy text-white px-6 py-4 rounded-lg font-semibold text-lg hover:bg-navy-light disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2">
-                                                {isGenerating ? (
-                                                    <><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div><span>Generating...</span></>
-                                                ) : (
-                                                    <><span>✨</span><span>Generate {createFormData.contentType === 'lesson_plan' ? 'Lesson Plan' : createFormData.contentType === 'assessment' ? 'Assessment' : 'Worksheet'}</span></>
-                                                )}
-                                            </button>
+                                            {createFormData.contentType === 'lesson_plan' && (<div><label className="block text-sm font-medium mb-2">Class Duration (minutes)</label><select value={createFormData.duration} onChange={e => setCreateFormData({...createFormData, duration: e.target.value})} className="w-40 border-2 border-gray-200 rounded-lg px-4 py-3"><option value="30">30 minutes</option><option value="45">45 minutes</option><option value="60">60 minutes</option><option value="90">90 minutes</option></select></div>)}
+                                            <div><label className="block text-sm font-medium mb-2">Additional Instructions (Optional)</label><textarea value={createFormData.additionalNotes} onChange={e => setCreateFormData({...createFormData, additionalNotes: e.target.value})} placeholder="Any specific requirements..." className="w-full border-2 border-gray-200 rounded-lg px-4 py-3 resize-none" rows={2} /></div>
+                                            <button onClick={handleGenerateContent} disabled={isGenerating || !createFormData.topic.trim() || !createFormData.gradeLevel || !createFormData.subject} className="w-full bg-navy text-white px-6 py-4 rounded-lg font-semibold text-lg hover:bg-navy-light disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2">{isGenerating ? (<><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div><span>Generating...</span></>) : (<><span>✨</span><span>Generate {createFormData.contentType === 'lesson_plan' ? 'Lesson Plan' : createFormData.contentType === 'assessment' ? 'Assessment' : 'Worksheet'}</span></>)}</button>
                                         </div>
                                     </div>
                                 </div>
@@ -756,75 +684,12 @@
 
                             {activeView === 'library' && (
                                 <div className="space-y-6">
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <h1 className="text-3xl font-bold text-navy">Content Library</h1>
-                                            <p className="text-gray-600 mt-1">Your generated lesson plans, assessments, and worksheets</p>
-                                        </div>
-                                        <button onClick={() => setActiveView('create')} className="px-6 py-3 bg-navy text-white rounded-lg hover:bg-navy-light transition-colors flex items-center gap-2">
-                                            <span>+</span><span>Create New</span>
-                                        </button>
-                                    </div>
-                                    <div className="flex gap-4">
-                                        <div className="relative flex-1">
-                                            <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                                            </svg>
-                                            <input type="text" placeholder="Search content..." value={libraryFilters.search} onChange={e => setLibraryFilters({...libraryFilters, search: e.target.value})}
-                                                className="w-full pl-10 border-2 border-gray-200 rounded-lg px-4 py-3" />
-                                        </div>
-                                        <select value={libraryFilters.type} onChange={e => setLibraryFilters({...libraryFilters, type: e.target.value})} className="w-40 border-2 border-gray-200 rounded-lg px-4 py-3">
-                                            <option value="all">All Types</option>
-                                            <option value="lesson_plan">Lesson Plans</option>
-                                            <option value="assessment">Assessments</option>
-                                            <option value="worksheet">Worksheets</option>
-                                        </select>
-                                    </div>
-                                    {generatedContent.length === 0 ? (
-                                        <div className="bg-white rounded-2xl p-12 text-center border border-gray-200">
-                                            <div className="text-6xl mb-4">📚</div>
-                                            <h3 className="text-lg font-medium mb-2">No content yet</h3>
-                                            <p className="text-gray-600 mb-4">Start creating lesson plans, assessments, and worksheets</p>
-                                            <button onClick={() => setActiveView('create')} className="px-6 py-3 bg-navy text-white rounded-lg hover:bg-navy-light transition-colors inline-flex items-center gap-2">
-                                                <span>+</span><span>Create Your First Content</span>
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                                            {generatedContent.filter(item => {
-                                                const matchesSearch = item.title.toLowerCase().includes(libraryFilters.search.toLowerCase());
-                                                const matchesType = libraryFilters.type === 'all' || item.contentType === libraryFilters.type;
-                                                return matchesSearch && matchesType;
-                                            }).map(item => (
-                                                <div key={item.id} className="bg-white p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow cursor-pointer"
-                                                    onClick={() => alert('Content Detail\n\nTitle: ' + item.title + '\n\n' + item.content.substring(0, 200) + '...')}>
-                                                    <div className="flex items-start gap-3">
-                                                        <div className="p-2 rounded-lg bg-navy/10">
-                                                            <span className="text-2xl">{item.contentType === 'lesson_plan' ? '📖' : item.contentType === 'assessment' ? '📋' : '📄'}</span>
-                                                        </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <h3 className="font-semibold line-clamp-2 text-navy">{item.title}</h3>
-                                                            <div className="flex flex-wrap gap-2 mt-2">
-                                                                <span className="text-xs bg-navy/10 text-navy px-2 py-1 rounded">
-                                                                    {item.contentType === 'lesson_plan' ? 'Lesson Plan' : item.contentType === 'assessment' ? 'Assessment' : 'Worksheet'}
-                                                                </span>
-                                                                <span className="text-xs border border-gray-300 px-2 py-1 rounded">Grade {item.gradeLevel}</span>
-                                                            </div>
-                                                            <p className="text-sm text-gray-600 mt-2">{item.subject}</p>
-                                                            <div className="flex items-center gap-1 text-xs text-gray-500 mt-3">
-                                                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                                                    <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd"></path>
-                                                                </svg>
-                                                                <span>{item.createdAt}</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
+                                    <div className="flex justify-between items-center"><div><h1 className="text-3xl font-bold text-navy">Content Library</h1><p className="text-gray-600 mt-1">Your generated lesson plans, assessments, and worksheets</p></div><button onClick={() => setActiveView('create')} className="px-6 py-3 bg-navy text-white rounded-lg hover:bg-navy-light flex items-center gap-2"><span>+</span><span>Create New</span></button></div>
+                                    <div className="flex gap-4"><div className="relative flex-1"><svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg><input type="text" placeholder="Search content..." value={libraryFilters.search} onChange={e => setLibraryFilters({...libraryFilters, search: e.target.value})} className="w-full pl-10 border-2 border-gray-200 rounded-lg px-4 py-3" /></div><select value={libraryFilters.type} onChange={e => setLibraryFilters({...libraryFilters, type: e.target.value})} className="w-40 border-2 border-gray-200 rounded-lg px-4 py-3"><option value="all">All Types</option><option value="lesson_plan">Lesson Plans</option><option value="assessment">Assessments</option><option value="worksheet">Worksheets</option></select></div>
+                                    {generatedContent.length === 0 ? (<div className="bg-white rounded-2xl p-12 text-center border border-gray-200"><div className="text-6xl mb-4">📚</div><h3 className="text-lg font-medium mb-2">No content yet</h3><p className="text-gray-600 mb-4">Start creating lesson plans, assessments, and worksheets</p><button onClick={() => setActiveView('create')} className="px-6 py-3 bg-navy text-white rounded-lg hover:bg-navy-light inline-flex items-center gap-2"><span>+</span><span>Create Your First Content</span></button></div>) : (<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">{generatedContent.filter(item => {const matchesSearch = item.title.toLowerCase().includes(libraryFilters.search.toLowerCase()); const matchesType = libraryFilters.type === 'all' || item.contentType === libraryFilters.type; return matchesSearch && matchesType;}).map(item => (<div key={item.id} className="bg-white p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => alert('Title: ' + item.title)}><div className="flex items-start gap-3"><div className="p-2 rounded-lg bg-navy/10"><span className="text-2xl">{item.contentType === 'lesson_plan' ? '📖' : item.contentType === 'assessment' ? '📋' : '📄'}</span></div><div className="flex-1 min-w-0"><h3 className="font-semibold line-clamp-2 text-navy">{item.title}</h3><div className="flex flex-wrap gap-2 mt-2"><span className="text-xs bg-navy/10 text-navy px-2 py-1 rounded">{item.contentType === 'lesson_plan' ? 'Lesson Plan' : item.contentType === 'assessment' ? 'Assessment' : 'Worksheet'}</span><span className="text-xs border border-gray-300 px-2 py-1 rounded">Grade {item.gradeLevel}</span></div><p className="text-sm text-gray-600 mt-2">{item.subject}</p><div className="flex items-center gap-1 text-xs text-gray-500 mt-3"><svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd"></path></svg><span>{item.createdAt}</span></div></div></div></div>))}</div>)}
                                 </div>
                             )}
+
                             {activeView === 'assignments' && (
                                 <div className="space-y-6">
                                     <div className="flex items-center justify-between">
